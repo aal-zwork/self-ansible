@@ -1,0 +1,20 @@
+---
+# ADM's instance already runs under an admin-privileged service account
+# (confirmed by the user), so `yc` authenticates automatically against the
+# instance metadata service — no credential needs to be provisioned here.
+# This task only verifies that assumption holds; it must never try to
+# create or store a yc auth secret itself.
+
+- name: Verify yc can reach the Yandex Cloud API using the instance SA
+  ansible.builtin.command: yc config list
+  register: yc_config_check
+  changed_when: false
+
+- name: Fail loudly if yc has no active profile
+  ansible.builtin.fail:
+    msg: >-
+      yc has no active profile on this host. This role assumes ADM's
+      instance service account is already admin-privileged; if that is not
+      the case, this is an infrastructure gap outside this repo's scope —
+      do not work around it by storing a yc auth secret here.
+  when: "'token' not in yc_config_check.stdout and 'service account' not in yc_config_check.stdout"

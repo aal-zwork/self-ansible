@@ -1,0 +1,37 @@
+---
+# This role only IMPORTS a VM GPG key that was already delivered to this
+# host out-of-band (see secrets/gpg/delivery/first-bootstrap.md). It never
+# generates a key — key generation is strictly local-only, see
+# secrets/AGENTS.md and secrets/gpg/master/.
+
+- name: Ensure gpg-agent config directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.gnupg"
+    state: directory
+    mode: "0700"
+
+- name: Template gpg-agent.conf (bounded cache TTL, no unlimited caching)
+  ansible.builtin.template:
+    src: gpg-agent.conf.j2
+    dest: "/home/{{ ansible_user }}/.gnupg/gpg-agent.conf"
+    mode: "0600"
+
+- name: Check whether the VM GPG key has already been imported
+  ansible.builtin.command: gpg --list-secret-keys --with-colons
+  register: gpg_secret_keys
+  changed_when: false
+
+- name: Warn if no VM GPG key is present yet
+  ansible.builtin.debug:
+    msg: >-
+      No secret GPG key found. If this is a fresh ADM machine, deliver the
+      VM key first — see secrets/gpg/delivery/first-bootstrap.md — then
+      re-run this role to import it.
+  when: "'sec:' not in gpg_secret_keys.stdout"
+
+- name: Initialize pass store if not already present
+  ansible.builtin.command: >
+    pass init "{{ pass_gpg_key_id | default(omit) }}"
+  args:
+    creates: "{{ pass_store_local_path }}/.gpg-id"
+  when: "'sec:' in gpg_secret_keys.stdout"

@@ -1,0 +1,20 @@
+---
+# Wipes everything session_open.yml created. Run on logout (hook) or
+# manually (`make session-close`, if wired into Makefile later).
+- hosts: adm_machines
+  gather_facts: false
+  tasks:
+    - name: Kill the session ssh-agent
+      ansible.builtin.command: systemctl --user stop ssh-agent.service
+      changed_when: true
+      failed_when: false
+
+    - name: Kill gpg-agent
+      ansible.builtin.command: gpgconf --kill gpg-agent
+      changed_when: true
+      failed_when: false
+
+    - name: Wipe tmpfs session runtime dir
+      ansible.builtin.file:
+        path: "{{ adm_session_runtime_dir }}"
+        state: absent

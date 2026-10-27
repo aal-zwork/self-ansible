@@ -1,0 +1,13 @@
+---
+# Provider contract for "yandex_cloud". Any new provider under
+# roles/providers/<name>/ must expose the same four task files so that
+# k8s_cluster_access and other generic roles can delegate uniformly.
+
+- name: Install yc CLI
+  ansible.builtin.import_tasks: install_cli.yml
+
+- name: Verify yc authentication (ADM instance service account)
+  ansible.builtin.import_tasks: authenticate.yml
+
+- name: Configure S3-compatible CLI access
+  ansible.builtin.import_tasks: s3_config.yml

@@ -1,0 +1,21 @@
+# Cluster has no direct internet access — egress must be an explicit
+# allow-list. Fill in internal registry / S3 endpoint CIDRs once known;
+# this is deliberately restrictive by default (deny-all egress otherwise).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-runtime-egress
+  namespace: agent-runtime
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # TODO: add internal S3 endpoint and internal container registry CIDRs
+    # once agent_runtime_scaffold is wired to real infrastructure.

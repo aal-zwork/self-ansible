@@ -1,0 +1,22 @@
+---
+# Configures the AWS-CLI-compatible S3 client against Yandex Object Storage.
+# Static access keys used here come from secrets/providers/yandex_cloud/ —
+# this role only *consumes* them via pass, it never creates them.
+
+- name: Ensure aws CLI is present (S3-compatible client for Yandex Object Storage)
+  ansible.builtin.apt:
+    name: awscli
+    state: present
+  become: true
+
+- name: Ensure ~/.aws directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.aws"
+    state: directory
+    mode: "0700"
+
+- name: Template S3 endpoint config (credentials are injected per-session, not here)
+  ansible.builtin.template:
+    src: config.j2
+    dest: "/home/{{ ansible_user }}/.aws/config"
+    mode: "0600"

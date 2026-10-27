@@ -1,0 +1,20 @@
+---
+- name: Ensure base packages are present
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - git
+      - jq
+      - unzip
+      - pass
+    state: present
+    update_cache: true
+  become: true
+
+- name: Ensure operator home src directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/src"
+    state: directory
+    mode: "0750"

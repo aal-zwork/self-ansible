@@ -1,0 +1,26 @@
+---
+# make workspace — full provisioning from scratch. Entry point for disaster
+# recovery: new VM -> run this -> deliver VM GPG key -> make secrets (in the
+# secrets/ repo) -> session_open.yml.
+- hosts: adm_machines
+  gather_facts: true
+  # Not a static `roles:` list: role names templated there are resolved
+  # before inventory group_vars are merged, so "providers/{{ cloud_provider }}"
+  # would fail with "'cloud_provider' is undefined". include_role in tasks:
+  # resolves per-host, after group_vars are available.
+  tasks:
+    - name: Apply base role
+      ansible.builtin.include_role:
+        name: base
+
+    - name: Apply provider-specific role
+      ansible.builtin.include_role:
+        name: "providers/{{ cloud_provider }}"
+
+    - name: Apply gnupg_pass role
+      ansible.builtin.include_role:
+        name: gnupg_pass
+
+    - name: Apply ssh_agent_session role
+      ansible.builtin.include_role:
+        name: ssh_agent_session

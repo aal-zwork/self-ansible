@@ -1,0 +1,28 @@
+---
+# Provider-agnostic entrypoint: delegates kubeconfig retrieval to
+# roles/providers/{{ cloud_provider }}/tasks/get_k8s_credentials.yml.
+# This role must never contain provider-specific commands itself.
+
+- name: Assert a supported cloud_provider is selected
+  ansible.builtin.assert:
+    that:
+      - cloud_provider in cloud_providers_available
+
+- name: Delegate kubeconfig retrieval to the selected provider
+  ansible.builtin.include_role:
+    name: "providers/{{ cloud_provider }}"
+    tasks_from: get_k8s_credentials
+  vars:
+    cluster_id: "{{ k8s_cluster_id }}"
+    kubeconfig_dest: "{{ adm_session_runtime_dir }}/kubeconfig"
+
+- name: Smoke-test cluster connectivity
+  ansible.builtin.command: kubectl --kubeconfig {{ adm_session_runtime_dir }}/kubeconfig get ns
+  register: k8s_smoke_test
+  changed_when: false
+  environment:
+    KUBECONFIG: "{{ adm_session_runtime_dir }}/kubeconfig"
+
+- name: Report cluster connectivity
+  ansible.builtin.debug:
+    var: k8s_smoke_test.stdout_lines

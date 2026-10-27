@@ -1,0 +1,20 @@
+---
+# make update — light refresh: pull latest roles, re-pull pass-store,
+# re-open the session. Does not reinstall packages (see upgrade.yml).
+- hosts: adm_machines
+  gather_facts: true
+  tasks:
+    - name: Pull latest ansible/secrets/skills repos
+      ansible.builtin.git:
+        repo: "{{ item.clone_url }}"
+        dest: "{{ item.dest }}"
+        update: true
+      loop: "{{ github_repos }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Pull latest pass-store from S3-backed git remote
+      ansible.builtin.command: git -C {{ pass_store_local_path }} pull --ff-only
+      changed_when: true
+
+- import_playbook: session_open.yml

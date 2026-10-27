@@ -1,0 +1,21 @@
+---
+# Single switch for the whole provider abstraction. All provider-specific
+# logic lives under roles/providers/{{ cloud_provider }}/ and the matching
+# secrets/providers/{{ cloud_provider }}/ on the secrets side.
+#
+# Adding a new provider: create roles/providers/<name>/ with the same
+# task-file set, add it to cloud_providers_available, then switch
+# cloud_provider. Do not edit generic roles to add a provider.
+cloud_provider: yandex_cloud
+
+cloud_providers_available:
+  - yandex_cloud
+
+# Base path on the pass-store (and mirrored prefix in S3) for secrets
+# belonging to the selected provider / external systems.
+pass_store_provider_prefix: "providers/{{ cloud_provider }}"
+pass_store_external_prefix: "external"
+
+# Runtime dir for anything decrypted during a session (kubeconfig, tokens).
+# Must be tmpfs-backed; wiped by session_close.yml and naturally on reboot.
+adm_session_runtime_dir: "/run/user/{{ ansible_user_uid | default(1000) }}/adm-session"

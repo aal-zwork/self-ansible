@@ -1,0 +1,29 @@
+---
+# Deploy key / PAT material is managed in secrets/external/github/ and
+# retrieved from `pass` here — this role never creates or stores the key
+# itself, only wires it into ssh-agent for the duration of the session.
+
+- name: Ensure ~/.ssh exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.ssh"
+    state: directory
+    mode: "0700"
+
+- name: Template ssh config for github.com
+  ansible.builtin.template:
+    src: ssh_config_github.j2
+    dest: "/home/{{ ansible_user }}/.ssh/config.d/github"
+    mode: "0600"
+
+# The actual `pass show external/github/deploy-key | ssh-add -` happens in
+# session_open.yml, scoped to SSH_AUTH_SOCK of the session's ssh-agent — the
+# private key material is never written to disk here.
+
+- name: Clone configured GitHub repositories (ansible/secrets/skills)
+  ansible.builtin.git:
+    repo: "{{ item.clone_url }}"
+    dest: "{{ item.dest }}"
+    update: true
+  loop: "{{ github_repos }}"
+  loop_control:
+    label: "{{ item.name }}"

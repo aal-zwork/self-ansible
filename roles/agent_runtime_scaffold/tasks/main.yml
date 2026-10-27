@@ -1,0 +1,22 @@
+---
+# Generic k8s scaffolding for an agent runtime. Deliberately runtime-agnostic
+# — the concrete runtime (candidate: ecc, https://github.com/aal-zwork/ecc)
+# plugs in later. See ../../../docs/ecc-integration-todo.md for open
+# questions that are NOT resolved by this role.
+
+- name: Apply agent-runtime namespace and RBAC
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: "{{ adm_session_runtime_dir }}/kubeconfig"
+    definition: "{{ lookup('ansible.builtin.template', item) | from_yaml }}"
+  loop:
+    - namespace.yaml.j2
+    - rbac.yaml.j2
+    - network_policy.yaml.j2
+
+- name: Apply S3 artifact-storage secret for agents
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: "{{ adm_session_runtime_dir }}/kubeconfig"
+    definition: "{{ lookup('ansible.builtin.template', 's3_secret.yaml.j2') | from_yaml }}"
+  no_log: true

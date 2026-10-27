@@ -1,0 +1,11 @@
+---
+# make upgrade — bump pinned tool versions (yc/kubectl/helm) and reinstall
+# the actual binaries. Heavier than update.yml; re-run install_cli tasks
+# unconditionally by forcing a reinstall check.
+- hosts: adm_machines
+  gather_facts: true
+  tasks:
+    - name: Re-run provider CLI install tasks (idempotent; picks up version bumps)
+      ansible.builtin.include_role:
+        name: "providers/{{ cloud_provider }}"
+        tasks_from: install_cli

@@ -1,0 +1,20 @@
+---
+- name: Ensure tmpfs-backed session runtime dir exists
+  ansible.builtin.file:
+    path: "{{ adm_session_runtime_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Assert runtime dir is actually on tmpfs
+  ansible.builtin.command: >
+    findmnt -n -o FSTYPE --target {{ adm_session_runtime_dir }}
+  register: runtime_dir_fstype
+  changed_when: false
+
+- name: Fail if session runtime dir is not tmpfs-backed
+  ansible.builtin.fail:
+    msg: >-
+      {{ adm_session_runtime_dir }} is not on tmpfs ({{ runtime_dir_fstype.stdout }}).
+      Secrets must never be written to persistent disk — fix XDG_RUNTIME_DIR
+      mounting before continuing.
+  when: runtime_dir_fstype.stdout != 'tmpfs'

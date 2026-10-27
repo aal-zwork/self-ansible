@@ -1,0 +1,59 @@
+---
+- name: Check if yc CLI is already installed
+  ansible.builtin.command: yc version
+  register: yc_version_check
+  changed_when: false
+  failed_when: false
+
+- name: Install yc CLI (official install script)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+  args:
+    executable: /bin/bash
+  when: yc_version_check.rc != 0
+  become: false
+
+- name: Ensure yc is on PATH via symlink
+  ansible.builtin.file:
+    src: "/home/{{ ansible_user }}/yandex-cloud/bin/yc"
+    dest: /usr/local/bin/yc
+    state: link
+  become: true
+  when: yc_version_check.rc != 0
+
+# kubectl/helm are generic k8s tooling, but their install source/version
+# compatibility is validated per-provider here for simplicity. If a second
+# provider needs different kubectl/helm handling, extract this into a
+# shared roles/k8s_tools/ role at that point — not before.
+- name: Check if kubectl is already installed
+  ansible.builtin.command: kubectl version --client
+  register: kubectl_check
+  changed_when: false
+  failed_when: false
+
+- name: Install kubectl
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -sSL -o /usr/local/bin/kubectl \
+      "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x /usr/local/bin/kubectl
+  args:
+    executable: /bin/bash
+  become: true
+  when: kubectl_check.rc != 0
+
+- name: Check if helm is already installed
+  ansible.builtin.command: helm version --short
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Install helm
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    executable: /bin/bash
+  become: true
+  when: helm_check.rc != 0
