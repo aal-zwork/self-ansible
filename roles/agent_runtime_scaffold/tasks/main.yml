@@ -3,11 +3,22 @@
 # — the concrete runtime (candidate: ecc, https://github.com/aal-zwork/ecc)
 # plugs in later. See ../../../docs/ecc-integration-todo.md for open
 # questions that are NOT resolved by this role.
+#
+# Not yet wired into any playbook (TODO, see ecc-integration-todo.md). When
+# wired, the caller must set `target_kubeconfig` — one environment can
+# manage several clusters (k8s_cluster_ids), so this role applies to
+# exactly one cluster per invocation; loop over k8s_cluster_ids at the
+# call site if the scaffold should exist on every cluster.
+
+- name: Assert target_kubeconfig is provided
+  ansible.builtin.assert:
+    that:
+      - target_kubeconfig is defined
 
 - name: Apply agent-runtime namespace and RBAC
   kubernetes.core.k8s:
     state: present
-    kubeconfig: "{{ adm_session_runtime_dir }}/kubeconfig"
+    kubeconfig: "{{ target_kubeconfig }}"
     definition: "{{ lookup('ansible.builtin.template', item) | from_yaml }}"
   loop:
     - namespace.yaml.j2
@@ -17,6 +28,6 @@
 - name: Apply S3 artifact-storage secret for agents
   kubernetes.core.k8s:
     state: present
-    kubeconfig: "{{ adm_session_runtime_dir }}/kubeconfig"
+    kubeconfig: "{{ target_kubeconfig }}"
     definition: "{{ lookup('ansible.builtin.template', 's3_secret.yaml.j2') | from_yaml }}"
   no_log: true

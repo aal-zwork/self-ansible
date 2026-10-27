@@ -4,11 +4,6 @@
 - hosts: adm_machines
   gather_facts: false
   tasks:
-    - name: Kill the session ssh-agent
-      ansible.builtin.command: systemctl --user stop ssh-agent.service
-      changed_when: true
-      failed_when: false
-
     - name: Kill gpg-agent
       ansible.builtin.command: gpgconf --kill gpg-agent
       changed_when: true

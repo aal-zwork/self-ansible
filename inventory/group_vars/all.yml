@@ -1,21 +1,46 @@
 ---
-# Single switch for the whole provider abstraction. All provider-specific
-# logic lives under roles/providers/{{ cloud_provider }}/ and the matching
-# secrets/providers/{{ cloud_provider }}/ on the secrets side.
-#
-# Adding a new provider: create roles/providers/<name>/ with the same
-# task-file set, add it to cloud_providers_available, then switch
-# cloud_provider. Do not edit generic roles to add a provider.
-cloud_provider: yandex_cloud
+# Vars that are the same across every environment (not tied to a specific
+# environment's provider/cloud/bucket). Environment-specific vars
+# (cloud_provider, yc_cloud_id, k8s_cluster_ids, S3 bucket, ...) live in
+# group_vars/<environment-name>.yml instead — see group_vars/first.yml and
+# docs/provider-abstraction.md.
 
 cloud_providers_available:
   - yandex_cloud
 
-# Base path on the pass-store (and mirrored prefix in S3) for secrets
-# belonging to the selected provider / external systems.
-pass_store_provider_prefix: "providers/{{ cloud_provider }}"
-pass_store_external_prefix: "external"
+# Pinned tool versions — bumped only via `make upgrade`. Same across
+# environments; if a cluster ever needs a different kubectl minor version,
+# move this into the environment's group_vars instead.
+yc_cli_version: "latest"      # TODO: pin to an exact version once validated on real ADM
+kubectl_version: "latest"     # TODO: pin, must track cluster's k8s minor version
+helm_version: "latest"        # TODO: pin
+
+# Local path on ADM where the (encrypted) pass-store git checkout lives.
+# One environment per ADM machine by construction (see inventory/hosts.yml),
+# so no per-environment separation is needed here on the ADM side.
+pass_store_local_path: "/home/{{ ansible_user }}/.password-store"
+
+# GitHub repositories this ADM checks out for its own operation. Public
+# repos, read-only (plain https, no credentials) — write access only ever
+# happens from the operator's own machine, outside this infra. Same across
+# environments.
+github_repos:
+  - name: ansible
+    clone_url: "https://github.com/aal-zwork/adm-ansible.git"
+    dest: "/home/{{ ansible_user }}/src/adm-ansible"
+  - name: secrets
+    clone_url: "https://github.com/aal-zwork/adm-secrets.git"
+    dest: "/home/{{ ansible_user }}/src/adm-secrets"
+  - name: skills
+    clone_url: "https://github.com/aal-zwork/adm-skills.git"
+    dest: "/home/{{ ansible_user }}/src/adm-skills"
 
 # Runtime dir for anything decrypted during a session (kubeconfig, tokens).
 # Must be tmpfs-backed; wiped by session_close.yml and naturally on reboot.
 adm_session_runtime_dir: "/run/user/{{ ansible_user_uid | default(1000) }}/adm-session"
+
+# Base path on the pass-store (and mirrored prefix in S3) for secrets
+# belonging to the selected provider / external systems. Depends on
+# cloud_provider, which is set per-environment (group_vars/first.yml).
+pass_store_provider_prefix: "providers/{{ cloud_provider }}"
+pass_store_external_prefix: "external"

@@ -18,3 +18,17 @@
       the case, this is an infrastructure gap outside this repo's scope —
       do not work around it by storing a yc auth secret here.
   when: "'token' not in yc_config_check.stdout and 'service account' not in yc_config_check.stdout"
+
+# Pin yc's default cloud/folder explicitly to this environment's values
+# (group_vars/<environment>.yml) rather than relying on whatever the
+# ambient profile happens to default to. Belt-and-suspenders: environments
+# are not expected to overlap on a single ADM host, but the same provider
+# (yandex_cloud) can host several unrelated clouds, so this removes any
+# ambiguity for every yc command that follows.
+- name: Pin yc default cloud-id for this environment
+  ansible.builtin.command: yc config set cloud-id {{ yc_cloud_id }}
+  changed_when: true
+
+- name: Pin yc default folder-id for this environment
+  ansible.builtin.command: yc config set folder-id {{ yc_folder_id }}
+  changed_when: true

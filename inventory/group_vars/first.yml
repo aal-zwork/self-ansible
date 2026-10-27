@@ -1,0 +1,33 @@
+---
+# Environment "first" — environment -> provider is 1:1 (see
+# docs/provider-abstraction.md). Applies to every host in the "first"
+# group, including every ADM replica under first.children.adm_machines.
+# The same service account is shared across all ADM replicas of this
+# environment by design (confirmed), so there is nothing per-ADM-host to
+# parametrize here beyond the dynamic SA lookup already done in
+# secrets/providers/yandex_cloud/update-secrets.sh.
+
+environment_name: first
+cloud_provider: yandex_cloud
+
+# Pins which Yandex Cloud organization/cloud this environment talks to —
+# needed because the same provider (yandex_cloud) can host several
+# unrelated clouds; without this, `yc` would fall back to whatever its
+# ambient default profile happens to point at.
+yc_cloud_id: "b1gloiengi7m420dlop6"
+yc_folder_id: "b1gq4cenjrahf6ca2tad"
+
+# Managed Kubernetes clusters in this environment. A list, not a scalar —
+# one environment can manage several clusters through its ADM replicas.
+# Add more cluster ids here as they're provisioned; no role/playbook
+# changes needed (k8s_cluster_access loops over this list).
+k8s_cluster_ids:
+  - "catojj5jb2nrckl04joo"
+
+# S3 bucket/prefix used as the pass-store git remote and for disaster
+# recovery artifacts. Dedicated to this environment specifically — NOT a
+# shared multi-environment/multi-provider bucket. A future environment
+# gets its own separate bucket and its own group_vars/<name>.yml, not a
+# new prefix inside this one.
+pass_store_s3_bucket: "ganievrf-self"
+pass_store_s3_prefix: "pass-store"

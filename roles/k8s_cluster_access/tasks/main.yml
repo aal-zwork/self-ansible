@@ -2,27 +2,40 @@
 # Provider-agnostic entrypoint: delegates kubeconfig retrieval to
 # roles/providers/{{ cloud_provider }}/tasks/get_k8s_credentials.yml.
 # This role must never contain provider-specific commands itself.
+#
+# One environment can manage several k8s clusters (k8s_cluster_ids is a
+# list) — loops over all of them, one kubeconfig file per cluster, named
+# by cluster id so they never collide.
 
 - name: Assert a supported cloud_provider is selected
   ansible.builtin.assert:
     that:
       - cloud_provider in cloud_providers_available
 
-- name: Delegate kubeconfig retrieval to the selected provider
+- name: Delegate kubeconfig retrieval to the selected provider (per cluster)
   ansible.builtin.include_role:
     name: "providers/{{ cloud_provider }}"
     tasks_from: get_k8s_credentials
   vars:
-    cluster_id: "{{ k8s_cluster_id }}"
-    kubeconfig_dest: "{{ adm_session_runtime_dir }}/kubeconfig"
+    cluster_id: "{{ item }}"
+    kubeconfig_dest: "{{ adm_session_runtime_dir }}/kubeconfig-{{ item }}"
+  loop: "{{ k8s_cluster_ids }}"
+  loop_control:
+    label: "{{ item }}"
 
-- name: Smoke-test cluster connectivity
-  ansible.builtin.command: kubectl --kubeconfig {{ adm_session_runtime_dir }}/kubeconfig get ns
+- name: Smoke-test connectivity to every cluster
+  ansible.builtin.command: kubectl --kubeconfig {{ adm_session_runtime_dir }}/kubeconfig-{{ item }} get ns
   register: k8s_smoke_test
   changed_when: false
   environment:
-    KUBECONFIG: "{{ adm_session_runtime_dir }}/kubeconfig"
+    KUBECONFIG: "{{ adm_session_runtime_dir }}/kubeconfig-{{ item }}"
+  loop: "{{ k8s_cluster_ids }}"
+  loop_control:
+    label: "{{ item }}"
 
 - name: Report cluster connectivity
   ansible.builtin.debug:
-    var: k8s_smoke_test.stdout_lines
+    msg: "{{ item.item }}: {{ item.stdout_lines }}"
+  loop: "{{ k8s_smoke_test.results }}"
+  loop_control:
+    label: "{{ item.item }}"

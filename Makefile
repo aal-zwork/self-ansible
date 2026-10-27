@@ -42,7 +42,7 @@ _detect-os:
 ifeq ($(UNAME_S),Darwin)
 	@case "$(MAKE)" in \
 		*gmake*) ;; \
-		*) echo "WARNING: on macOS, invoke this Makefile as 'gmake', not 'make' (Homebrew GNU Make)." ;; \
+		*) echo "ERROR: on macOS, invoke this Makefile as 'gmake', not 'make' (Homebrew GNU Make)."; exit 1 ;; \
 	esac
 endif
 

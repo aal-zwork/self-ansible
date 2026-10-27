@@ -1,19 +1,12 @@
 ---
-# Pulls secrets out of pass into tmpfs and wires up ssh-agent for the
-# current session. Run this after bootstrap.yml, and again any time a new
-# interactive session starts.
+# Pulls secrets out of pass into tmpfs for the current session. Run this
+# after bootstrap.yml, and again any time a new interactive session starts.
+#
+# GitHub repos (ansible/secrets/skills) are public and read-only from ADM —
+# no deploy-key/PAT to load into ssh-agent (see github_access role).
 - hosts: adm_machines
   gather_facts: true
   roles:
     - ephemeral_runtime_dir
     - github_access
     - k8s_cluster_access
-  tasks:
-    - name: Load GitHub deploy key into the session ssh-agent
-      ansible.builtin.shell: |
-        set -euo pipefail
-        pass show external/github/deploy-key | SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket" ssh-add -
-      args:
-        executable: /bin/bash
-      changed_when: true
-      no_log: true

@@ -20,7 +20,3 @@
     - name: Apply gnupg_pass role
       ansible.builtin.include_role:
         name: gnupg_pass
-
-    - name: Apply ssh_agent_session role
-      ansible.builtin.include_role:
-        name: ssh_agent_session
