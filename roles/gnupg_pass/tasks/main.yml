@@ -6,14 +6,14 @@
 
 - name: Ensure gpg-agent config directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.gnupg"
+    path: "/home/{{ ansible_facts.user_id }}/.gnupg"
     state: directory
     mode: "0700"
 
 - name: Template gpg-agent.conf (bounded cache TTL, no unlimited caching)
   ansible.builtin.template:
     src: gpg-agent.conf.j2
-    dest: "/home/{{ ansible_user }}/.gnupg/gpg-agent.conf"
+    dest: "/home/{{ ansible_facts.user_id }}/.gnupg/gpg-agent.conf"
     mode: "0600"
 
 - name: Check whether the VM GPG key has already been imported

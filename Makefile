@@ -22,6 +22,18 @@ endif
 
 GANIEVRF_MAKE_ASK_SKIP ?= no
 
+# Roles escalate per-task via `become: true` only where root is actually
+# needed (apt, /usr/local/bin, /etc) — not globally. If sudo on ADM is
+# NOPASSWD, this is a no-op; if sudo needs a password, set
+# GANIEVRF_ASK_BECOME_PASS=yes to have ansible-playbook prompt for it once
+# per run (not stored anywhere). See docs/ssh-and-sudo.md.
+GANIEVRF_ASK_BECOME_PASS ?= no
+ifeq ($(GANIEVRF_ASK_BECOME_PASS),yes)
+  ANSIBLE_BECOME_FLAGS := --ask-become-pass
+else
+  ANSIBLE_BECOME_FLAGS :=
+endif
+
 .PHONY: help _detect-os _confirm ping workspace update upgrade
 
 help:
@@ -61,12 +73,12 @@ ping: _detect-os
 
 workspace: _detect-os
 	$(call _confirm,Run full bootstrap (ansible/playbooks/bootstrap.yml))
-	ansible-playbook playbooks/bootstrap.yml
+	ansible-playbook $(ANSIBLE_BECOME_FLAGS) playbooks/bootstrap.yml
 
 update: _detect-os
 	$(call _confirm,Pull latest roles/secrets and refresh the session (ansible/playbooks/update.yml))
-	ansible-playbook playbooks/update.yml
+	ansible-playbook $(ANSIBLE_BECOME_FLAGS) playbooks/update.yml
 
 upgrade: _detect-os
 	$(call _confirm,Bump pinned tool versions and reinstall binaries (ansible/playbooks/upgrade.yml))
-	ansible-playbook playbooks/upgrade.yml
+	ansible-playbook $(ANSIBLE_BECOME_FLAGS) playbooks/upgrade.yml

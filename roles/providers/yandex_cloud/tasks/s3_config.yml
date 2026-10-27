@@ -3,20 +3,52 @@
 # Static access keys used here come from secrets/providers/yandex_cloud/ —
 # this role only *consumes* them via pass, it never creates them.
 
-- name: Ensure aws CLI is present (S3-compatible client for Yandex Object Storage)
-  ansible.builtin.apt:
-    name: awscli
-    state: present
+- name: Check if aws CLI is already installed
+  ansible.builtin.command: aws --version
+  register: aws_cli_check
+  changed_when: false
+  failed_when: false
+
+# The `awscli` apt package is often missing/outdated across Ubuntu
+# releases (AWS recommends the official installer, not apt, for this
+# reason) — install AWS CLI v2 the same way as kubectl/helm: a pinned,
+# official download, idempotent via the check above.
+- name: Download AWS CLI v2 installer
+  ansible.builtin.get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+    dest: /tmp/awscliv2.zip
+    mode: "0644"
+  when: aws_cli_check.rc != 0
+
+- name: Unzip AWS CLI v2 installer
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+  when: aws_cli_check.rc != 0
+
+- name: Run AWS CLI v2 installer
+  ansible.builtin.command: /tmp/aws/install
   become: true
+  when: aws_cli_check.rc != 0
+
+- name: Clean up AWS CLI v2 installer artifacts
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/awscliv2.zip
+    - /tmp/aws
+  when: aws_cli_check.rc != 0
 
 - name: Ensure ~/.aws directory exists
   ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.aws"
+    path: "/home/{{ ansible_facts.user_id }}/.aws"
     state: directory
     mode: "0700"
 
 - name: Template S3 endpoint config (credentials are injected per-session, not here)
   ansible.builtin.template:
     src: config.j2
-    dest: "/home/{{ ansible_user }}/.aws/config"
+    dest: "/home/{{ ansible_facts.user_id }}/.aws/config"
     mode: "0600"

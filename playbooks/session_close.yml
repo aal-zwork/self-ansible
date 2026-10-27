@@ -2,7 +2,10 @@
 # Wipes everything session_open.yml created. Run on logout (hook) or
 # manually (`make session-close`, if wired into Makefile later).
 - hosts: adm_machines
-  gather_facts: false
+  # Must gather facts: adm_session_runtime_dir depends on ansible_user_uid.
+  # Without it, the fallback default(1000) could point at the wrong path
+  # if the real UID differs, leaving the actual session dir uncleaned.
+  gather_facts: true
   tasks:
     - name: Kill gpg-agent
       ansible.builtin.command: gpgconf --kill gpg-agent

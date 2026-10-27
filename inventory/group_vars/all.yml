@@ -18,7 +18,7 @@ helm_version: "latest"        # TODO: pin
 # Local path on ADM where the (encrypted) pass-store git checkout lives.
 # One environment per ADM machine by construction (see inventory/hosts.yml),
 # so no per-environment separation is needed here on the ADM side.
-pass_store_local_path: "/home/{{ ansible_user }}/.password-store"
+pass_store_local_path: "/home/{{ ansible_facts.user_id }}/.password-store"
 
 # GitHub repositories this ADM checks out for its own operation. Public
 # repos, read-only (plain https, no credentials) — write access only ever
@@ -27,13 +27,13 @@ pass_store_local_path: "/home/{{ ansible_user }}/.password-store"
 github_repos:
   - name: ansible
     clone_url: "https://github.com/aal-zwork/adm-ansible.git"
-    dest: "/home/{{ ansible_user }}/src/adm-ansible"
+    dest: "/home/{{ ansible_facts.user_id }}/src/adm-ansible"
   - name: secrets
     clone_url: "https://github.com/aal-zwork/adm-secrets.git"
-    dest: "/home/{{ ansible_user }}/src/adm-secrets"
+    dest: "/home/{{ ansible_facts.user_id }}/src/adm-secrets"
   - name: skills
     clone_url: "https://github.com/aal-zwork/adm-skills.git"
-    dest: "/home/{{ ansible_user }}/src/adm-skills"
+    dest: "/home/{{ ansible_facts.user_id }}/src/adm-skills"
 
 # Runtime dir for anything decrypted during a session (kubeconfig, tokens).
 # Must be tmpfs-backed; wiped by session_close.yml and naturally on reboot.

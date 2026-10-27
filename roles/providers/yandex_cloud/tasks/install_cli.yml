@@ -16,7 +16,7 @@
 
 - name: Ensure yc is on PATH via symlink
   ansible.builtin.file:
-    src: "/home/{{ ansible_user }}/yandex-cloud/bin/yc"
+    src: "/home/{{ ansible_facts.user_id }}/yandex-cloud/bin/yc"
     dest: /usr/local/bin/yc
     state: link
   become: true
